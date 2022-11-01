@@ -8,6 +8,8 @@ global UDP_IP_CLIENT
 global UDP_PORT_CLIENT
 import unicodedata
 from checksum import calculaCheckSum
+from log import log
+from archivo import prog
 from datetime import datetime
 import sys
 
@@ -25,9 +27,12 @@ portno = 7000
 sock.bind(("", portno))
 
 
+"""
+Armado de ACK para GX7
+"""
 def procesar_dato_gx7(buff):
     data = buff.split(";")
-    # >SAK;ID=KX93;#000C; 25
+    
     if len(data) > 2:
         ack = ">SAK;{};{};*".format(data[1], data[2])
         check = calculaCheckSum(ack)
@@ -38,36 +43,27 @@ def procesar_dato_gx7(buff):
         return data
 
 
-def log(dato):
-    x = datetime.now()
-    fecha = x.strftime("%d%m%Y")
-    fic = open("log_" + fecha + ".txt", "a")
-    fic.writelines(str(x) + " " + dato + "\n")
-    fic.close()
 
 
+# Funcion que recepciona datos y hace parser inicial
 def thread_terminal():
     x = datetime.now()
     fecha = str(x.strftime("%d%m%Y"))
     global client_addr
     global sock
-    # hostname = ""
-    # portno = 7000
-    # # portno=7500
-    # sock.bind(('',portno))
+    
     try:
         msg, client_addr1 = sock.recvfrom(1024)
-
         msg = str(msg)
 
-        # if re.search(">RPI|>RPU|>RKO|>RID|>RAU", msg):
         if re.search(">R", msg):
-            client_addr = client_addr1
+            client_addr = client_addr1 
             print("Mensaje recibido del cliente: ")
-            print(msg)
+            print(msg)  # Imprime en pantalla mensaje recibido del post remoto
             # acá va el llamado al archivo
             datos = msg.split(";")
             log(msg)
+            # Si el dato es mayor a dos caracteres crea el ack
             if len(datos) > 2:
                 datap = procesar_dato_gx7(msg)
                 msg_out = datap.encode()
@@ -80,6 +76,7 @@ def thread_terminal():
         print(sys.exc_info())
 
 
+# ENVIO DE COMANDOS POR TECLADO
 def envio_comando():
     try:
         # sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -91,12 +88,28 @@ def envio_comando():
         pass
 
 
-arrancar_terminal = threading.Thread(target=thread_terminal)
-envio = threading.Thread(target=envio_comando)
-print("Terminal MCRWEB")
-arrancar_terminal.start()
-envio.start()
-while True:
+def envio_comando_archivo():
+    try:
+        lista_prog = prog()
+        
+        for elemento in lista_prog:
+            
+            if client_addr != "":
+                msg_out = elemento.encode()
+                sock.sendto(msg_out, client_addr)
+    except:
+        # print("error")
+        pass
+
+# MAIN
+arrancar_terminal = threading.Thread(target=thread_terminal) # Hilo para recepcion de datos
+envio = threading.Thread(target=envio_comando) # Hilo para envio de datos
+print("Terminal MCRWEB") # Mensaje inicial
+arrancar_terminal.start() # Arranca hilo terminal
+envio.start() # Arranca hilo envio
+flag_prog=True
+while True: 
+    # envio_comando_archivo()
     if not arrancar_terminal.is_alive():
         try:
             arrancar_terminal = threading.Thread(target=thread_terminal)
@@ -104,5 +117,6 @@ while True:
         except Exception:
             print(Exception())
     if not envio.is_alive():
-        envio = threading.Thread(target=envio_comando)
-        envio.start()
+        if flag_prog:
+            envio = threading.Thread(target=envio_comando)
+            envio.start()

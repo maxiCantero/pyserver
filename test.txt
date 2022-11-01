@@ -1,0 +1,19 @@
+>SFD55AA<				//reseteo a como sale de fabrica
+>SGR gm2m.movistar<			// autoconfiguracion
+>SGR m2mdataglobal.claro.com.ar<
+>SIP0 190.210.153.163<                     // ip 0
+>SDU2010<                                 // seteo de puerto
+>SGR*<                                    // reinicia modulo comunicacion
+
+>SLD IP0<
+
+>SKO432043204320000000390039<             // modo dormido
+
+>STD00000120000200<                       //tiempo distancia detenido cada 2 min y en mov cada 200 mts
+>STD01000030000000<
+>STD02000900000000<
+>STD03000240000500<
+>STD04000000001000<
+>STD05000000002000<
+>STD06005200000000<
+>STD07000300000000<
